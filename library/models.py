@@ -1,4 +1,6 @@
 from django.db import models
+from django.contrib.auth.models import User
+
 
 class LibraryEntry(models.Model):
     STATUS_WISHLIST = "wishlist"
@@ -13,11 +15,15 @@ class LibraryEntry(models.Model):
         STATUS_DROPPED,
     )
 
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+    )
     external_game_id = models.CharField(max_length=100, unique=True)
     status = models.CharField(max_length=20, default=STATUS_WISHLIST)
     hours_played = models.IntegerField(default=0)
-
-    # --- Simple methods for easy unit tests (not used by the exercises) ---
 
     def external_id_length(self) -> int:
         return len(self.external_game_id or "")
