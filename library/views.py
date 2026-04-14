@@ -24,52 +24,65 @@ def validation_error(details=None):
 @csrf_exempt
 @require_http_methods(["POST"])
 def create_library_entry(request):
-    try:
-        data = json.loads(request.body)
-    except:
-        return validation_error({"json": "malformado"})
+    if request.method == "GET":
+        entries = LibraryEntry.objects.all()
+        data = [
+            {
+                "id": entry.id,
+                "external_game_id": entry.external_game_id,
+                "status": entry.status,
+                "hours_played": entry.hours_played,
+            }
+            for entry in entries
+        ]
+        return JsonResponse(data, safe=False, status=200)
+    else:
+        try:
+            data = json.loads(request.body)
+        except:
+            return validation_error({"json": "malformado"})
 
-    if not isinstance(data, dict) or data == {}:
-        return validation_error({"json": "vacío"})
+        if not isinstance(data, dict) or data == {}:
+            return validation_error({"json": "vacío"})
 
-    required = ("external_game_id", "status", "hours_played")
-    missing = [f for f in required if f not in data]
-    if missing:
-        return validation_error({field: "faltante" for field in missing})
+        required = ("external_game_id", "status", "hours_played")
+        missing = [f for f in required if f not in data]
+        if missing:
+            return validation_error({field: "faltante" for field in missing})
 
-    external_game_id = data["external_game_id"]
-    status = data["status"]
-    hours_played = data["hours_played"]
+        external_game_id = data["external_game_id"]
+        status = data["status"]
+        hours_played = data["hours_played"]
 
-    if not isinstance(external_game_id, str):
-        return validation_error({"external_game_id": "debe ser string"})
-    if not isinstance(status, str):
-        return validation_error({"status": "debe ser string"})
-    if not isinstance(hours_played, int):
-        return validation_error({"hours_played": "debe ser integer"})
-    if status not in ALLOWED_STATUS:
-        return validation_error({"status": "valor no permitido"})
-    if hours_played < 0:
-        return validation_error({"hours_played": "debe ser >= 0"})
+        if not isinstance(external_game_id, str):
+            return validation_error({"external_game_id": "debe ser string"})
+        if not isinstance(status, str):
+            return validation_error({"status": "debe ser string"})
+        if not isinstance(hours_played, int):
+            return validation_error({"hours_played": "debe ser integer"})
+        if status not in ALLOWED_STATUS:
+            return validation_error({"status": "valor no permitido"})
+        if hours_played < 0:
+            return validation_error({"hours_played": "debe ser >= 0"})
 
-    if LibraryEntry.objects.filter(external_game_id=external_game_id).exists():
+        if LibraryEntry.objects.filter(external_game_id=external_game_id).exists():
+            return JsonResponse({
+                "error": "duplicate_entry",
+                "message": "La entrada ya existe"
+            }, status=409)
+
+        entry = LibraryEntry.objects.create(
+            external_game_id=external_game_id,
+            status=status,
+            hours_played=hours_played,
+        )
+
         return JsonResponse({
-            "error": "duplicate_entry",
-            "message": "La entrada ya existe"
-        }, status=409)
-
-    entry = LibraryEntry.objects.create(
-        external_game_id=external_game_id,
-        status=status,
-        hours_played=hours_played,
-    )
-
-    return JsonResponse({
-        "id": entry.id,
-        "external_game_id": entry.external_game_id,
-        "status": entry.status,
-        "hours_played": entry.hours_played,
-    }, status=201)
+            "id": entry.id,
+            "external_game_id": entry.external_game_id,
+            "status": entry.status,
+            "hours_played": entry.hours_played,
+        }, status=201)
 
 
 @require_GET
