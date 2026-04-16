@@ -14,5 +14,5 @@ urlpatterns = [
     path("api/library/entries/list/", list_library_entries),
     path("api/library/entries/<int:entry_id>/", get_library_entry),
     path("api/library/entries/<int:entry_id>/delete/", delete_library_entry),
-    path("api/library/entries/<int:entry_id>/update/", update_library_entry),
+    path("api/library/entries/<int:entry_id>/", update_library_entry),
 ]
