@@ -3,8 +3,7 @@ from .views import (
     health,
     create_library_entry,
     list_library_entries,
-    get_library_entry,
-    update_library_entry,
+    get_library_entries,
     delete_library_entry
 )
 
@@ -12,7 +11,6 @@ urlpatterns = [
     path("health/", health),
     path("api/library/entries/", create_library_entry),
     path("api/library/entries/list/", list_library_entries),
-    path("api/library/entries/<int:entry_id>/", get_library_entry),
+    path("api/library/entries/<int:entry_id>/", get_library_entries),
     path("api/library/entries/<int:entry_id>/delete/", delete_library_entry),
-    path("api/library/entries/<int:entry_id>/", update_library_entry),
 ]

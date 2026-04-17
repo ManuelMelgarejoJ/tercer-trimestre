@@ -24,6 +24,7 @@ def validation_error(details=None):
 @csrf_exempt
 @require_http_methods(["POST"])
 def create_library_entry(request):
+    # validar JSON
     try:
         data = json.loads(request.body)
     except:
@@ -41,6 +42,7 @@ def create_library_entry(request):
     status = data["status"]
     hours_played = data["hours_played"]
 
+    # validar tipos
     if not isinstance(external_game_id, str):
         return validation_error({"external_game_id": "debe ser string"})
     if not isinstance(status, str):
@@ -74,6 +76,7 @@ def create_library_entry(request):
 
 @require_GET
 def list_library_entries(request):
+    # listar entradas
     entries = LibraryEntry.objects.all()
     data = [
         {
@@ -87,27 +90,10 @@ def list_library_entries(request):
     return JsonResponse(data, safe=False, status=200)
 
 
-@require_GET
-def get_library_entry(request, entry_id):
-    try:
-        entry = LibraryEntry.objects.get(id=entry_id)
-    except LibraryEntry.DoesNotExist:
-        return JsonResponse({
-            "error": "not_found",
-            "message": "La entrada no existe"
-        }, status=404)
-
-    return JsonResponse({
-        "id": entry.id,
-        "external_game_id": entry.external_game_id,
-        "status": entry.status,
-        "hours_played": entry.hours_played,
-    }, status=200)
-
-
 @csrf_exempt
-@require_http_methods(["DELETE"])
-def delete_library_entry(request, entry_id):
+@require_http_methods(["GET", "PATCH"])
+def get_library_entries(request, entry_id):
+    # obtener entrada
     try:
         entry = LibraryEntry.objects.get(id=entry_id)
     except LibraryEntry.DoesNotExist:
@@ -116,25 +102,15 @@ def delete_library_entry(request, entry_id):
             "message": "La entrada no existe"
         }, status=404)
 
-    entry.delete()
-
-    return JsonResponse({
-        "status": "deleted",
-        "id": entry_id
-    }, status=200)
-
-
-@csrf_exempt
-@require_http_methods(["PATCH"])
-def update_library_entry(request, entry_id):
-    try:
-        entry = LibraryEntry.objects.get(id=entry_id)
-    except LibraryEntry.DoesNotExist:
+    if request.method == "GET":
         return JsonResponse({
-            "error": "not_found",
-            "message": "La entrada no existe"
-        }, status=404)
+            "id": entry.id,
+            "external_game_id": entry.external_game_id,
+            "status": entry.status,
+            "hours_played": entry.hours_played,
+        }, status=200)
 
+    # actualizar entrada
     try:
         data = json.loads(request.body)
     except:
@@ -174,4 +150,24 @@ def update_library_entry(request, entry_id):
         "external_game_id": entry.external_game_id,
         "status": entry.status,
         "hours_played": entry.hours_played,
+    }, status=200)
+
+
+@csrf_exempt
+@require_http_methods(["DELETE"])
+def delete_library_entry(request, entry_id):
+    # borrar entrada
+    try:
+        entry = LibraryEntry.objects.get(id=entry_id)
+    except LibraryEntry.DoesNotExist:
+        return JsonResponse({
+            "error": "not_found",
+            "message": "La entrada no existe"
+        }, status=404)
+
+    entry.delete()
+
+    return JsonResponse({
+        "status": "deleted",
+        "id": entry_id
     }, status=200)
