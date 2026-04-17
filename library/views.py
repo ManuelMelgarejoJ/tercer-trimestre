@@ -2,12 +2,9 @@ import json
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods, require_GET
 from django.views.decorators.csrf import csrf_exempt
+from django.contrib.auth.models import User
+from django.contrib.auth import authenticate, login
 from .models import LibraryEntry
-
-
-@require_GET
-def health(request):
-    return JsonResponse({"status": "ok"})
 
 
 ALLOWED_STATUS = {"wishlist", "playing", "completed", "dropped"}
@@ -21,10 +18,105 @@ def validation_error(details=None):
     }, status=400)
 
 
+def unauthorized(message):
+    return JsonResponse({
+        "error": "unauthorized",
+        "message": message
+    }, status=401)
+
+
+@require_GET
+def health(request):
+    return JsonResponse({"status": "ok"})
+
+
+# registro
+@csrf_exempt
+@require_http_methods(["POST"])
+def register(request):
+    try:
+        data = json.loads(request.body)
+    except:
+        return validation_error({"json": "malformado"})
+
+    if not isinstance(data, dict) or data == {}:
+        return validation_error({"json": "vacío"})
+
+    if "username" not in data or "password" not in data:
+        return validation_error({"campos": "faltantes"})
+
+    username = data["username"]
+    password = data["password"]
+
+    if not isinstance(username, str):
+        return validation_error({"username": "debe ser string"})
+    if not isinstance(password, str):
+        return validation_error({"password": "debe ser string"})
+    if len(password) < 8:
+        return validation_error({"password": "mínimo 8 caracteres"})
+    if User.objects.filter(username=username).exists():
+        return validation_error({"username": "ya existe"})
+
+    user = User.objects.create_user(username=username, password=password)
+
+    return JsonResponse({
+        "id": user.id,
+        "username": user.username
+    }, status=201)
+
+
+# login
+@csrf_exempt
+@require_http_methods(["POST"])
+def login_view(request):
+    try:
+        data = json.loads(request.body)
+    except:
+        return validation_error({"json": "malformado"})
+
+    if "username" not in data or "password" not in data:
+        return validation_error({"campos": "faltantes"})
+
+    username = data["username"]
+    password = data["password"]
+
+    if not isinstance(username, str) or not isinstance(password, str):
+        return validation_error({"tipos": "incorrectos"})
+
+    user = authenticate(request, username=username, password=password)
+    if user is None:
+        return JsonResponse({
+            "error": "unauthorized",
+            "message": "Credenciales incorrectas"
+        }, status=401)
+
+    login(request, user)
+
+    return JsonResponse({
+        "id": user.id,
+        "username": user.username
+    }, status=200)
+
+
+# usuario actual
+@require_GET
+def users_me(request):
+    if not request.user.is_authenticated:
+        return unauthorized("No autenticado")
+
+    return JsonResponse({
+        "id": request.user.id,
+        "username": request.user.username
+    }, status=200)
+
+
+# crear entrada
 @csrf_exempt
 @require_http_methods(["POST"])
 def create_library_entry(request):
-    # validar JSON
+    if not request.user.is_authenticated:
+        return unauthorized("No autenticado")
+
     try:
         data = json.loads(request.body)
     except:
@@ -42,7 +134,6 @@ def create_library_entry(request):
     status = data["status"]
     hours_played = data["hours_played"]
 
-    # validar tipos
     if not isinstance(external_game_id, str):
         return validation_error({"external_game_id": "debe ser string"})
     if not isinstance(status, str):
@@ -54,16 +145,11 @@ def create_library_entry(request):
     if hours_played < 0:
         return validation_error({"hours_played": "debe ser >= 0"})
 
-    if LibraryEntry.objects.filter(external_game_id=external_game_id).exists():
-        return JsonResponse({
-            "error": "duplicate_entry",
-            "message": "La entrada ya existe"
-        }, status=409)
-
     entry = LibraryEntry.objects.create(
         external_game_id=external_game_id,
         status=status,
         hours_played=hours_played,
+        user=request.user
     )
 
     return JsonResponse({
@@ -74,10 +160,14 @@ def create_library_entry(request):
     }, status=201)
 
 
+# listar entradas
 @require_GET
 def list_library_entries(request):
-    # listar entradas
-    entries = LibraryEntry.objects.all()
+    if not request.user.is_authenticated:
+        return unauthorized("No autenticado")
+
+    entries = LibraryEntry.objects.filter(user=request.user)
+
     data = [
         {
             "id": entry.id,
@@ -90,16 +180,19 @@ def list_library_entries(request):
     return JsonResponse(data, safe=False, status=200)
 
 
+# get + patch entrada
 @csrf_exempt
 @require_http_methods(["GET", "PATCH"])
 def get_library_entries(request, entry_id):
-    # obtener entrada
+    if not request.user.is_authenticated:
+        return unauthorized("No autenticado")
+
     try:
-        entry = LibraryEntry.objects.get(id=entry_id)
+        entry = LibraryEntry.objects.get(id=entry_id, user=request.user)
     except LibraryEntry.DoesNotExist:
         return JsonResponse({
             "error": "not_found",
-            "message": "La entrada no existe"
+            "message": "La entrada solicitada no existe"
         }, status=404)
 
     if request.method == "GET":
@@ -110,7 +203,6 @@ def get_library_entries(request, entry_id):
             "hours_played": entry.hours_played,
         }, status=200)
 
-    # actualizar entrada
     try:
         data = json.loads(request.body)
     except:
@@ -153,16 +245,19 @@ def get_library_entries(request, entry_id):
     }, status=200)
 
 
+# borrar entrada
 @csrf_exempt
 @require_http_methods(["DELETE"])
 def delete_library_entry(request, entry_id):
-    # borrar entrada
+    if not request.user.is_authenticated:
+        return unauthorized("No autenticado")
+
     try:
-        entry = LibraryEntry.objects.get(id=entry_id)
+        entry = LibraryEntry.objects.get(id=entry_id, user=request.user)
     except LibraryEntry.DoesNotExist:
         return JsonResponse({
             "error": "not_found",
-            "message": "La entrada no existe"
+            "message": "La entrada solicitada no existe"
         }, status=404)
 
     entry.delete()
