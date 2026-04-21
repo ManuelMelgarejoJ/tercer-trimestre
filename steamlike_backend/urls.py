@@ -1,9 +1,8 @@
 from django.contrib import admin
-from django.urls import path, include
+from django.urls import path
 from library.views import health
 
 urlpatterns = [
     path("admin/", admin.site.urls),
-    #path("api/library/", include("core.urls")),
-    path("api/health/", health)
+    path("api/health/", health),
 ]

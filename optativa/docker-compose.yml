@@ -1,0 +1,30 @@
+services:
+  db:
+    image: postgres:16
+    container_name: todo_pg
+    environment:
+      POSTGRES_USER: todo_user
+      POSTGRES_PASSWORD: todo_pass
+      POSTGRES_DB: todo_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - todo_pg_data:/var/lib/postgresql/data
+
+  app:
+    build: .
+    container_name: todo_app
+    depends_on:
+      - db
+    environment:
+      PORT: 8080
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: todo_db
+      DB_USER: todo_user
+      DB_PASSWORD: todo_pass
+    ports:
+      - "8080:8080"
+
+volumes:
+  todo_pg_data:

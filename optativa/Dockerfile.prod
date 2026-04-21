@@ -1,0 +1,38 @@
+# =========================
+# 1) BUILD (compilar con javac)
+# =========================
+FROM eclipse-temurin:17-jdk AS build
+WORKDIR /app
+
+# Necesario para descargar el driver JDBC
+RUN apt-get update -y \
+  && apt-get install -y curl ca-certificates \
+  && rm -rf /var/lib/apt/lists/*
+
+# Copiamos código y scripts
+COPY src ./src
+COPY scripts ./scripts
+
+# Descargamos los JARs en /app/lib (al menos postgresql.jar)
+RUN bash scripts/download-libs.sh
+
+# Compilamos el código
+RUN mkdir -p /app/out/main \
+  && find src/main/java -name "*.java" > sources.txt \
+  && javac -cp "lib/*" -d /app/out/main @sources.txt
+
+# =========================
+# 2) RUNTIME (ejecutar con JRE)
+# =========================
+FROM eclipse-temurin:17-jre
+WORKDIR /app
+
+# Copiamos clases compiladas y librerías
+COPY --from=build /app/out/main ./out/main
+COPY --from=build /app/lib ./lib
+
+# Render expone PORT; esto es informativo
+EXPOSE 8080
+
+# Ejecuta la clase principal.
+CMD ["sh", "-c", "java -cp 'lib/*:out/main' App"]
