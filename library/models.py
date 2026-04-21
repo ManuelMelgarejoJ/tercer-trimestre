@@ -1,8 +1,8 @@
 from django.db import models
 from django.contrib.auth.models import User
 
-
 class LibraryEntry(models.Model):
+    # constantes de estado
     STATUS_WISHLIST = "wishlist"
     STATUS_PLAYING = "playing"
     STATUS_COMPLETED = "completed"
@@ -15,6 +15,7 @@ class LibraryEntry(models.Model):
         STATUS_DROPPED,
     )
 
+    # campos principales
     external_game_id = models.CharField(max_length=100, unique=True)
     status = models.CharField(max_length=20, default=STATUS_WISHLIST)
     hours_played = models.IntegerField(default=0)
@@ -28,7 +29,7 @@ class LibraryEntry(models.Model):
         blank=True
     )
 
-    # métodos simples
+    # métodos auxiliares
     def external_id_length(self) -> int:
         return len(self.external_game_id or "")
 
