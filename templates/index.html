@@ -1,0 +1,115 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SteamLike Dashboard</title>
+    <link rel="stylesheet" href="{% static 'library/css/index.css' %}">
+</head>
+<body>
+
+    <header class="topbar">
+        <h1>SteamLike Dashboard</h1>
+        <p class="subtitle">Panel visual para probar tu API de Django</p>
+    </header>
+
+    <main class="container">
+
+        <!-- CUENTA -->
+        <section class="card">
+            <h2>Cuenta</h2>
+            <p class="desc">Registro, login, logout y perfil actual.</p>
+
+            <form id="auth-form" class="form">
+                <label>Usuario
+                    <input id="username" type="text" placeholder="manolin" required>
+                </label>
+
+                <label>Contraseña
+                    <input id="password" type="password" placeholder="mínimo 8 caracteres" required>
+                </label>
+
+                <div class="button-row">
+                    <button type="button" data-action="register">Registrarse</button>
+                    <button type="button" data-action="login" class="secondary">Iniciar sesión</button>
+                    <button type="button" data-action="logout" class="secondary">Cerrar sesión</button>
+                    <button type="button" data-action="me" class="secondary">Ver perfil</button>
+                </div>
+            </form>
+
+            <div id="auth-status" class="status">Esperando acción…</div>
+        </section>
+
+        <!-- CONTRASEÑA -->
+        <section class="card">
+            <h2>Contraseña</h2>
+            <p class="desc">Cambia la contraseña del usuario autenticado.</p>
+
+            <form id="password-form" class="form">
+                <label>Contraseña actual
+                    <input id="current-password" type="password" required>
+                </label>
+
+                <label>Nueva contraseña
+                    <input id="new-password" type="password" required>
+                </label>
+
+                <button type="submit">Cambiar contraseña</button>
+            </form>
+
+            <div id="password-status" class="status">Necesitas iniciar sesión antes.</div>
+        </section>
+
+        <!-- BIBLIOTECA -->
+        <section class="card wide">
+            <h2>Biblioteca</h2>
+            <p class="desc">Crea entradas, consulta el listado y gestiona tus juegos.</p>
+
+            <form id="entry-form" class="form">
+                <label>External game ID
+                    <input id="external-game-id" type="text" placeholder="elden-ring" required>
+                </label>
+
+                <label>Estado
+                    <select id="status">
+                        <option value="completed">completed</option>
+                        <option value="dropped">dropped</option>
+                        <option value="playing">playing</option>
+                        <option value="wishlist">wishlist</option>
+                    </select>
+                </label>
+
+                <label>Horas jugadas
+                    <input id="hours-played" type="number" min="0" value="0" required>
+                </label>
+
+                <label>ID para acciones
+                    <input id="entry-id" type="number" min="1" placeholder="1">
+                </label>
+
+                <div class="button-row">
+                    <button type="submit">Crear entrada</button>
+                    <button type="button" data-entry-action="list" class="secondary">Listar</button>
+                    <button type="button" data-entry-action="detail" class="secondary">Detalle</button>
+                    <button type="button" data-entry-action="patch" class="secondary">PATCH</button>
+                    <button type="button" data-entry-action="put" class="secondary">PUT</button>
+                    <button type="button" data-entry-action="delete" class="danger">DELETE</button>
+                </div>
+            </form>
+
+            <div id="library-status" class="status">La biblioteca aparecerá aquí.</div>
+            <div id="entries" class="entries"></div>
+        </section>
+
+        <!-- RESPUESTA CRUDA -->
+        <section class="card wide">
+            <h2>Respuesta del servidor</h2>
+            <textarea id="response-viewer" readonly></textarea>
+        </section>
+
+    </main>
+
+    <script src="{% static 'library/js/index.js' %}"></script>
+</body>
+</html>

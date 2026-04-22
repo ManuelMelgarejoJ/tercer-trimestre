@@ -31,7 +31,7 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
 
-    # Third-party.
+    # Third-party
     "corsheaders",
 
     # Local apps
@@ -53,10 +53,13 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = "steamlike_backend.urls"
 
+# -----------------------------
+# TEMPLATES (Frontend)
+# -----------------------------
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [],
+        "DIRS": [BASE_DIR / "templates"],   # ← TU CARPETA templates/
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
@@ -71,6 +74,9 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "steamlike_backend.wsgi.application"
 
+# -----------------------------
+# DATABASE
+# -----------------------------
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
@@ -94,15 +100,29 @@ TIME_ZONE = "Europe/Madrid"
 USE_I18N = True
 USE_TZ = True
 
-STATIC_URL = "static/"
+# -----------------------------
+# STATIC FILES (Frontend)
+# -----------------------------
+STATIC_URL = "/static/"
+STATICFILES_DIRS = [
+    BASE_DIR / "static",   # ← TU CARPETA static/
+]
+
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-# --- CORS + cookies (SessionAuthentication) ---
-CORS_ALLOWED_ORIGINS = _env_csv("DJANGO_CORS_ALLOWED_ORIGINS", "http://frontend:3000,http://localhost:3000")
+# -----------------------------
+# CORS + COOKIES
+# -----------------------------
+CORS_ALLOWED_ORIGINS = _env_csv(
+    "DJANGO_CORS_ALLOWED_ORIGINS",
+    "http://frontend:3000,http://localhost:3000"
+)
 CORS_ALLOW_CREDENTIALS = _env_bool("DJANGO_CORS_ALLOW_CREDENTIALS", True)
 
-CSRF_TRUSTED_ORIGINS = _env_csv("DJANGO_CSRF_TRUSTED_ORIGINS", "http://frontend:3000,http://localhost:3000")
+CSRF_TRUSTED_ORIGINS = _env_csv(
+    "DJANGO_CSRF_TRUSTED_ORIGINS",
+    "http://frontend:3000,http://localhost:3000"
+)
 
-# Dev defaults for cookies (keep simple; hardening can be done later)
 SESSION_COOKIE_SAMESITE = "Lax"
 CSRF_COOKIE_SAMESITE = "Lax"

@@ -1,0 +1,126 @@
+APARTADO 1. QUE HACEN LOS METODOS HTTP EN ESTE PROYECTO
+
+En este apartado se explica para que sirve cada metodo HTTP y en que partes del backend se usa.
+
+GET
+GET sirve para consultar informacion sin cambiar nada en el servidor.
+En este proyecto se usa para:
+- comprobar que el backend funciona en /api/health/
+- ver los datos del usuario autenticado en /api/users/me/
+- listar las entradas de la biblioteca en /api/library/entries/
+- ver una entrada concreta en /api/library/entries/{id}/
+
+POST
+POST sirve para enviar datos al servidor y crear algo nuevo o ejecutar una accion.
+En este proyecto se usa para:
+- registrar un usuario en /api/auth/register/
+- iniciar sesion en /api/auth/login/
+- cerrar sesion en /api/auth/logout/
+- cambiar la contraseña en /api/users/me/password/
+- crear una entrada de biblioteca en /api/library/entries/
+
+PUT
+PUT sirve para sustituir por completo un recurso que ya existe.
+En este proyecto se usa en:
+- /api/library/entries/{id}/put/
+Aqui el frontend tiene que enviar todos los campos: external_game_id, status y hours_played.
+Si falta uno, la operacion no debe aceptarse.
+
+PATCH
+PATCH sirve para modificar solo una parte de un recurso.
+En este proyecto se usa en:
+- /api/library/entries/{id}/
+Con PATCH no hace falta mandar todos los campos. Solo se envian los que se quieren cambiar.
+
+DELETE
+DELETE sirve para borrar recursos.
+En este proyecto se usa para:
+- borrar una entrada de biblioteca en /api/library/entries/{id}/delete/
+- borrar la cuenta del usuario autenticado en /api/users/me/
+
+
+APARTADO 2. QUE SIGNIFICA CADA CODIGO DE ESTADO
+
+En este apartado se explica que indica cada codigo HTTP y en que situaciones aparece en este backend.
+
+200 OK
+Significa que la peticion ha salido bien y el servidor devuelve una respuesta correcta.
+Aparece, por ejemplo, cuando:
+- el healthcheck responde correctamente
+- el perfil del usuario se consulta bien
+- una contraseña se cambia correctamente
+- una entrada se consulta o se actualiza correctamente
+
+201 Created
+Significa que se ha creado un recurso nuevo.
+En este backend aparece cuando:
+- se registra un usuario nuevo
+- se crea una nueva entrada de biblioteca
+
+204 No Content
+Significa que la operacion ha ido bien, pero no hace falta devolver contenido.
+En este backend aparece cuando:
+- se hace logout
+- se borra una entrada
+- se borra una cuenta de usuario
+
+400 Bad Request
+Significa que el problema esta en los datos enviados por el cliente.
+En este backend aparece cuando:
+- el JSON esta vacio o mal formado
+- faltan campos obligatorios
+- la contraseña actual no es correcta
+- la nueva contraseña es demasiado corta
+- el status no es valido
+- hours_played tiene un valor incorrecto
+
+401 Unauthorized
+Significa que el usuario no esta autenticado.
+En este backend aparece cuando alguien intenta usar rutas privadas sin haber iniciado sesion.
+Por ejemplo:
+- ver su perfil sin login
+- cambiar su contraseña sin login
+- crear o modificar entradas sin login
+- borrar su cuenta sin login
+
+403 Forbidden
+Significa que el usuario esta autenticado, pero no tiene permiso para hacer esa accion.
+En este backend no se esta usando ahora mismo.
+En este proyecto se ha preferido usar 404 cuando el recurso no pertenece al usuario.
+
+404 Not Found
+Significa que el recurso no existe o que no se encuentra para ese usuario.
+En este backend aparece cuando:
+- una entrada no existe
+- una entrada pertenece a otro usuario
+
+409 Conflict
+Significa que hay un conflicto con los datos actuales del servidor.
+En este backend no se usa de forma explicita.
+Podria usarse, por ejemplo, si se intenta crear un usuario con un nombre que ya existe.
+
+500 Internal Server Error
+Significa que el error esta en el servidor y no en la peticion del cliente.
+En este backend no se devuelve manualmente.
+Si apareciera, seria por un fallo interno no controlado en el codigo.
+
+
+APARTADO 3. RESUMEN FINAL
+
+Este proyecto usa los metodos HTTP para separar claramente cada tipo de accion:
+- GET para consultar
+- POST para crear o lanzar acciones
+- PUT para reemplazar por completo
+- PATCH para modificar solo una parte
+- DELETE para borrar
+
+Los codigos HTTP sirven para indicar el resultado de esa accion:
+- 200 cuando todo va bien y hay respuesta
+- 201 cuando se crea algo nuevo
+- 204 cuando todo va bien pero no hay contenido
+- 400 cuando los datos son invalidos
+- 401 cuando falta autenticacion
+- 403 cuando hay autenticacion pero no permiso
+- 404 cuando el recurso no existe o no es accesible
+- 409 cuando hay conflicto de datos
+- 500 cuando falla el servidor
