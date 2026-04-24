@@ -1,2 +1,0 @@
-src/test/java/HealthEndpointTest.java
-src/test/java/domain/TaskTest.java
