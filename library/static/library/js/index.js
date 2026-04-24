@@ -79,7 +79,7 @@ document.querySelectorAll("[data-entry-action]").forEach(btn => {
         const id = document.getElementById("entry-id").value;
         const external_game_id = document.getElementById("external-game-id").value;
         const status = document.getElementById("status").value;
-        const hours_played = document.getElementById("hours-played").value;
+        const hours_played = Number(document.getElementById("hours-played").value);
 
         let data;
 
@@ -108,7 +108,7 @@ document.getElementById("entry-form").onsubmit = async e => {
 
     const external_game_id = document.getElementById("external-game-id").value;
     const status = document.getElementById("status").value;
-    const hours_played = document.getElementById("hours-played").value;
+    const hours_played = Number(document.getElementById("hours-played").value);
 
     const data = await request(API.entries, "POST", {
         external_game_id,
