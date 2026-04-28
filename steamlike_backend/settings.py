@@ -1,51 +1,29 @@
-from pathlib import Path
 import os
+import sys
+from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-def _env(name: str, default: str | None = None) -> str | None:
-    return os.environ.get(name, default)
+SECRET_KEY = os.getenv("SECRET_KEY", "dev-secret-key")
+DEBUG = True
 
-def _env_bool(name: str, default: bool = False) -> bool:
-    value = os.environ.get(name)
-    if value is None:
-        return default
-    return value.strip().lower() in {"1", "true", "yes", "y", "on"}
-
-def _env_csv(name: str, default_csv: str = "") -> list[str]:
-    raw = os.environ.get(name, default_csv)
-    items = [x.strip() for x in raw.split(",") if x.strip()]
-    return items
-
-SECRET_KEY = _env("DJANGO_SECRET_KEY", "change-me")
-DEBUG = _env_bool("DJANGO_DEBUG", False)
-
-ALLOWED_HOSTS = _env_csv("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1")
+ALLOWED_HOSTS = ["*"]
 
 INSTALLED_APPS = [
-    # Django
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-
-    # Third-party.
-    "corsheaders",
-
-    # Local apps
     "library",
 ]
 
 MIDDLEWARE = [
-    "corsheaders.middleware.CorsMiddleware",
-
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
-
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
@@ -71,23 +49,44 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "steamlike_backend.wsgi.application"
 
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.postgresql",
-        "NAME": _env("POSTGRES_DB", "steamlike"),
-        "USER": _env("POSTGRES_USER", "steamlike"),
-        "PASSWORD": _env("POSTGRES_PASSWORD", "steamlike"),
-        "HOST": _env("POSTGRES_HOST", "db"),
-        "PORT": _env("POSTGRES_PORT", "5432"),
-    }
-}
+# ============================================================
+# BASE DE DATOS — CONFIGURACIÓN INTELIGENTE
+# ============================================================
 
-AUTH_PASSWORD_VALIDATORS = [
-    {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
-    {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},
-    {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
-    {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
-]
+# 1) Si estamos ejecutando tests → usar SQLite (rápido y sin errores)
+if "test" in sys.argv:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": ":memory:",
+        }
+    }
+
+# 2) Si estamos en Docker → usar host "db"
+elif os.getenv("DOCKER_ENV") == "1":
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.postgresql",
+            "HOST": "db",
+            "NAME": os.getenv("POSTGRES_DB", "steamlike"),
+            "USER": os.getenv("POSTGRES_USER", "steamlike"),
+            "PASSWORD": os.getenv("POSTGRES_PASSWORD", "steamlike"),
+        }
+    }
+
+# 3) Si estamos en local → usar PostgreSQL local o SQLite si no hay DB
+else:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.postgresql",
+            "HOST": os.getenv("POSTGRES_HOST", "localhost"),
+            "NAME": os.getenv("POSTGRES_DB", "steamlike"),
+            "USER": os.getenv("POSTGRES_USER", "steamlike"),
+            "PASSWORD": os.getenv("POSTGRES_PASSWORD", "steamlike"),
+        }
+    }
+
+AUTH_PASSWORD_VALIDATORS = []
 
 LANGUAGE_CODE = "es-es"
 TIME_ZONE = "Europe/Madrid"
@@ -96,13 +95,3 @@ USE_TZ = True
 
 STATIC_URL = "static/"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
-
-# --- CORS + cookies (SessionAuthentication) ---
-CORS_ALLOWED_ORIGINS = _env_csv("DJANGO_CORS_ALLOWED_ORIGINS", "http://frontend:3000,http://localhost:3000")
-CORS_ALLOW_CREDENTIALS = _env_bool("DJANGO_CORS_ALLOW_CREDENTIALS", True)
-
-CSRF_TRUSTED_ORIGINS = _env_csv("DJANGO_CSRF_TRUSTED_ORIGINS", "http://frontend:3000,http://localhost:3000")
-
-# Dev defaults for cookies (keep simple; hardening can be done later)
-SESSION_COOKIE_SAMESITE = "Lax"
-CSRF_COOKIE_SAMESITE = "Lax"

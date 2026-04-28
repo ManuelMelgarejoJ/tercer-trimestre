@@ -43,3 +43,8 @@ jobs:
           POSTGRES_PASSWORD: steamlike
         run: |
           python manage.py test
+
+      - name: Trigger Render Deploy
+        if: success()
+        run: |
+          curl -X POST "TU_DEPLOY_HOOK_DE_RENDER"

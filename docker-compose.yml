@@ -1,40 +1,25 @@
 services:
-  db:
-    image: postgres:16
-    restart: unless-stopped
-    environment:
-      POSTGRES_DB: ${POSTGRES_DB}
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
-
   web:
     build: .
-    restart: unless-stopped
-    env_file:
-      - .env
-    depends_on:
-      - db
+    command: python manage.py runserver 0.0.0.0:8000
     volumes:
       - .:/app
     ports:
       - "8000:8000"
-    command: python manage.py runserver 0.0.0.0:8000
+    environment:
+      - DOCKER_ENV=1
+      - POSTGRES_HOST=db
+      - POSTGRES_DB=steamlike
+      - POSTGRES_USER=steamlike
+      - POSTGRES_PASSWORD=steamlike
+    depends_on:
+      - db
 
-
-  #frontend:
-    #build: ../steamlike-frontend
-    #restart: unless-stopped
-    #environment:
-      #API_BASE_URL: http://localhost:8000
-    #depends_on:
-      #- web
-    #ports:
-      #- "3000:80"
-
-volumes:
-  postgres_data:
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: steamlike
+      POSTGRES_USER: steamlike
+      POSTGRES_PASSWORD: steamlike
+    ports:
+      - "5432:5432"
