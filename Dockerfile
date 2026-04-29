@@ -14,6 +14,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . /app/
 
+# Render asigna el puerto en la variable $PORT
 EXPOSE 8000
 
-CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+# IMPORTANTE: sustituye "tercer_trimestre" por tu carpeta real
+CMD gunicorn tercer_trimestre.wsgi:application --bind 0.0.0.0:$PORT
