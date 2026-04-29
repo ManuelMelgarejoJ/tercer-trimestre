@@ -1,5 +1,6 @@
 from pathlib import Path
 import os
+import dj_database_url   # ← IMPORTANTE
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -23,29 +24,22 @@ DEBUG = _env_bool("DJANGO_DEBUG", False)
 ALLOWED_HOSTS = _env_csv("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1")
 
 INSTALLED_APPS = [
-    # Django
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-
-    # Third-party
     "corsheaders",
-
-    # Local apps
     "library",
 ]
 
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
-
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
-
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
@@ -53,13 +47,10 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = "steamlike_backend.urls"
 
-# -----------------------------
-# TEMPLATES (Frontend)
-# -----------------------------
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [BASE_DIR / "templates"],   # ← TU CARPETA templates/
+        "DIRS": [BASE_DIR / "templates"],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
@@ -75,17 +66,14 @@ TEMPLATES = [
 WSGI_APPLICATION = "steamlike_backend.wsgi.application"
 
 # -----------------------------
-# DATABASE
+# DATABASE (CORREGIDO PARA RENDER)
 # -----------------------------
 DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.postgresql",
-        "NAME": _env("POSTGRES_DB", "steamlike"),
-        "USER": _env("POSTGRES_USER", "steamlike"),
-        "PASSWORD": _env("POSTGRES_PASSWORD", "steamlike"),
-        "HOST": _env("POSTGRES_HOST", "db"),
-        "PORT": _env("POSTGRES_PORT", "5432"),
-    }
+    "default": dj_database_url.config(
+        default=_env("DATABASE_URL"),
+        conn_max_age=600,
+        ssl_require=False
+    )
 }
 
 AUTH_PASSWORD_VALIDATORS = [
@@ -100,19 +88,13 @@ TIME_ZONE = "Europe/Madrid"
 USE_I18N = True
 USE_TZ = True
 
-# -----------------------------
-# STATIC FILES (Frontend)
-# -----------------------------
 STATIC_URL = "/static/"
 STATICFILES_DIRS = [
-    BASE_DIR / "static",   # ← TU CARPETA static/
+    BASE_DIR / "static",
 ]
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-# -----------------------------
-# CORS + COOKIES
-# -----------------------------
 CORS_ALLOWED_ORIGINS = _env_csv(
     "DJANGO_CORS_ALLOWED_ORIGINS",
     "http://frontend:3000,http://localhost:3000"
@@ -126,7 +108,6 @@ CSRF_TRUSTED_ORIGINS = _env_csv(
 
 SESSION_COOKIE_SAMESITE = "Lax"
 CSRF_COOKIE_SAMESITE = "Lax"
-
 
 MAILEROO_TOKEN = _env("MAILEROO_TOKEN")
 MAILEROO_FROM = _env("MAILEROO_FROM")
