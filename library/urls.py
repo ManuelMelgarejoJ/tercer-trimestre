@@ -2,6 +2,7 @@ from django.urls import path
 from .views import (
     health,
     register,
+    debug_email_test,
     login_view,
     logout_view,
     users_me,
@@ -15,6 +16,7 @@ from .views import (
 urlpatterns = [
     path("health/", health),
     path("api/auth/register/", register),
+    path("api/debug/email/test/", debug_email_test),
     path("api/auth/login/", login_view),
     path("api/auth/logout/", logout_view),
     path("api/users/me/", users_me),

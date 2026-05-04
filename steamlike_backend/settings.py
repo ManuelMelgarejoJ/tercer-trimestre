@@ -1,8 +1,10 @@
 from pathlib import Path
 import os
 import dj_database_url   # IMPORTANTE
+from dotenv import load_dotenv
 
 BASE_DIR = Path(__file__).resolve().parent.parent
+load_dotenv(BASE_DIR / ".env")
 
 def _env(name: str, default: str | None = None) -> str | None:
     return os.environ.get(name, default)
@@ -69,12 +71,14 @@ WSGI_APPLICATION = "steamlike_backend.wsgi.application"
 # DATABASE (CORREGIDO PARA RENDER)
 # -----------------------------
 DATABASES = {
-    "default": dj_database_url.config(
-        default=_env("DATABASE_URL"),
-        conn_max_age=600,
-        ssl_require=False
-    )
+    "default": dj_database_url.config(default=_env("DATABASE_URL"), conn_max_age=600, ssl_require=False)
 }
+
+if not DATABASES["default"]:
+    DATABASES["default"] = {
+        "ENGINE": "django.db.backends.sqlite3",
+        "NAME": BASE_DIR / "db.sqlite3",
+    }
 
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
@@ -111,4 +115,21 @@ CSRF_COOKIE_SAMESITE = "Lax"
 
 MAILEROO_TOKEN = _env("MAILEROO_TOKEN")
 MAILEROO_FROM = _env("MAILEROO_FROM")
-MAILEROO_ENDPOINT = _env("MAILEROO_ENDPOINT", "https://api.maileroo.com/v1/send")
+MAILEROO_ENDPOINT = _env("MAILEROO_ENDPOINT", "https://smtp.maileroo.com/api/v2/emails")
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+        },
+    },
+    "loggers": {
+        "library.services.email_service": {
+            "handlers": ["console"],
+            "level": "INFO",
+            "propagate": False,
+        },
+    },
+}

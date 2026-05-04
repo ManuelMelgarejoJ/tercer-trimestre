@@ -36,13 +36,24 @@ async function request(url, method="GET", body=null) {
 document.querySelectorAll("#auth-form button").forEach(btn => {
     btn.onclick = async () => {
         const action = btn.dataset.action;
-        const username = document.getElementById("username").value;
+        const username = document.getElementById("username").value.trim();
+        const email = document.getElementById("email").value.trim();
         const password = document.getElementById("password").value;
 
         let data;
 
-        if (action === "register")
-            data = await request(API.register, "POST", { username, password });
+        if (action === "register") {
+            if (!email) {
+                data = {
+                    error: "validation_error",
+                    message: "Introduce un correo electronico para registrarte",
+                };
+                showResponse(data);
+                document.getElementById("auth-status").textContent = JSON.stringify(data);
+                return;
+            }
+            data = await request(API.register, "POST", { username, password, email });
+        }
 
         if (action === "login")
             data = await request(API.login, "POST", { username, password });

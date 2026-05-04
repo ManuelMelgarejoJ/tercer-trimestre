@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods, require_GET
 from django.views.decorators.csrf import csrf_exempt
@@ -5,6 +6,11 @@ from django.contrib.auth.models import User
 from django.contrib.auth import authenticate, login, logout
 from .models import LibraryEntry
 from .helpers import validation_error, unauthorized, not_found, load_json
+from .services.email_service import (
+    EmailService,
+    ExternalServiceError,
+    ExternalServiceUnavailable,
+)
 
 
 ALLOWED_STATUS = {"wishlist", "playing", "completed", "dropped"}
@@ -41,6 +47,33 @@ def validate_entry_payload(data, require_all_fields):
     return None
 
 
+def external_service_unavailable():
+    return JsonResponse({
+        "error": "external_service_unavailable",
+        "message": "Servicio externo no disponible"
+    }, status=503)
+
+
+def external_service_error():
+    return JsonResponse({
+        "error": "external_service_error",
+        "message": "Error del servicio externo"
+    }, status=502)
+
+
+def validate_string_fields(data, fields):
+    for field in fields:
+        if field not in data:
+            return validation_error({"campos": "faltantes"})
+        if not isinstance(data[field], str):
+            return validation_error({field: "debe ser string"})
+    return None
+
+
+def is_valid_email(email):
+    return isinstance(email, str) and "@" in email and email.index("@") > 0 and not email.endswith("@")
+
+
 # healthcheck
 @require_GET
 def health(request):
@@ -55,8 +88,12 @@ def register(request):
     if error_response:
         return error_response
 
-    if "username" not in data or "password" not in data:
-        return validation_error({"campos": "faltantes"})
+    validation_response = validate_string_fields(data, ("username", "password", "email"))
+    if validation_response:
+        return validation_response
+
+    if not is_valid_email(data["email"]):
+        return validation_error({"email": "formato invalido"})
 
     if len(data["password"]) < 8:
         return validation_error({"password": "mínimo 8 caracteres"})
@@ -64,9 +101,59 @@ def register(request):
     if User.objects.filter(username=data["username"]).exists():
         return validation_error({"username": "ya existe"})
 
-    user = User.objects.create_user(username=data["username"], password=data["password"])
+    user = User.objects.create_user(
+        username=data["username"],
+        password=data["password"],
+        email=data["email"],
+    )
 
-    return JsonResponse({"id": user.id, "username": user.username}, status=201)
+    email_sent = True
+
+    try:
+        EmailService.send_email(
+            to=user.email,
+            subject="Bienvenido a Steamlike",
+            text=f"Hola {user.username}, tu cuenta se ha creado correctamente.",
+            action="register_welcome",
+            user=user,
+        )
+    except (ExternalServiceUnavailable, ExternalServiceError):
+        email_sent = False
+
+    response = {"id": user.id, "username": user.username, "email": user.email, "email_sent": email_sent}
+    if not email_sent:
+        response["warning"] = "Usuario creado, pero no se pudo enviar el correo de bienvenida"
+
+    return JsonResponse(response, status=201)
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def debug_email_test(request):
+    if not settings.DEBUG:
+        return JsonResponse({"error": "not_found", "message": "Ruta no disponible"}, status=404)
+
+    data, error_response = load_json(request)
+    if error_response:
+        return error_response
+
+    validation_response = validate_string_fields(data, ("to", "subject", "text"))
+    if validation_response:
+        return validation_response
+
+    try:
+        EmailService.send_email(
+            to=data["to"],
+            subject=data["subject"],
+            text=data["text"],
+            action="send_email",
+        )
+    except ExternalServiceUnavailable:
+        return external_service_unavailable()
+    except ExternalServiceError:
+        return external_service_error()
+
+    return JsonResponse({"ok": True}, status=200)
 
 
 # login usuario
@@ -167,7 +254,7 @@ def library_entries(request):
 
 # get + patch entrada
 @csrf_exempt
-@require_http_methods(["GET", "PATCH"])
+@require_http_methods(["GET", "PATCH", "PUT"])
 def library_entry_detail(request, entry_id):
     if not request.user.is_authenticated:
         return unauthorized()
@@ -183,7 +270,7 @@ def library_entry_detail(request, entry_id):
     if error_response:
         return error_response
 
-    validation_response = validate_entry_payload(data, require_all_fields=False)
+    validation_response = validate_entry_payload(data, require_all_fields=request.method == "PUT")
     if validation_response:
         return validation_response
 
