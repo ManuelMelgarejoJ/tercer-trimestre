@@ -45,6 +45,12 @@ docker compose exec web python manage.py startapp auth_api
 
 > Recuerda: después hay que añadir la app a `INSTALLED_APPS` y crear/incluir sus `urls.py` si aplica.
 
+### Ejecutar tests con coverage
+```
+python -m coverage run manage.py test
+python -m coverage report
+```
+
 ## Variables de entorno (.env)
 El proyecto carga variables desde `.env` (usado por `docker-compose.yml`).  
 En desarrollo, por defecto CORS permite:
