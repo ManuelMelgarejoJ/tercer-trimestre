@@ -28,7 +28,7 @@ API_LIMIT = 9
 
 
 MODEL_METHOD_CASES = [
-    ("length_single_char", {"external_game_id": "x"}, "external_id_length", 2),
+    ("length_single_char", {"external_game_id": "x"}, "external_id_length", 1),
     ("length_two_words", {"external_game_id": "game id"}, "external_id_length", 7),
     ("length_with_dash", {"external_game_id": "abc-123"}, "external_id_length", 7),
     ("length_with_spaces_inside", {"external_game_id": "a b c"}, "external_id_length", 5),
