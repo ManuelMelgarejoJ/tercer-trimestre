@@ -9,6 +9,13 @@ load_dotenv(BASE_DIR / ".env")
 def _env(name: str, default: str | None = None) -> str | None:
     return os.environ.get(name, default)
 
+def _env_stripped(name: str) -> str | None:
+    value = os.environ.get(name)
+    if value is None:
+        return None
+    value = value.strip()
+    return value or None
+
 def _env_bool(name: str, default: bool = False) -> bool:
     value = os.environ.get(name)
     if value is None:
@@ -71,8 +78,20 @@ WSGI_APPLICATION = "steamlike_backend.wsgi.application"
 # -----------------------------
 # DATABASE (CORREGIDO PARA RENDER)
 # -----------------------------
+DATABASE_URL = _env_stripped("DATABASE_URL")
+if DATABASE_URL and DATABASE_URL.startswith("postgres://"):
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+
 DATABASES = {
-    "default": dj_database_url.config(default=_env("DATABASE_URL"), conn_max_age=600, ssl_require=False)
+    "default": (
+        dj_database_url.parse(
+            DATABASE_URL,
+            conn_max_age=600,
+            ssl_require=_env_bool("DATABASE_SSL_REQUIRE", not DEBUG),
+        )
+        if DATABASE_URL
+        else {}
+    )
 }
 
 if not DATABASES["default"]:
