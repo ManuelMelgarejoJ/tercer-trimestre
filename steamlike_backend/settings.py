@@ -1,6 +1,6 @@
-from pathlib import Path
+﻿from pathlib import Path
 import os
-import dj_database_url   # IMPORTANTE
+import dj_database_url
 from dotenv import load_dotenv
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -20,10 +20,10 @@ def _env_csv(name: str, default_csv: str = "") -> list[str]:
     items = [x.strip() for x in raw.split(",") if x.strip()]
     return items
 
-SECRET_KEY = _env("DJANGO_SECRET_KEY", "change-me")
-DEBUG = _env_bool("DJANGO_DEBUG", False)
+SECRET_KEY = _env("DJANGO_SECRET_KEY", _env("SECRET_KEY", "change-me"))
+DEBUG = _env_bool("DJANGO_DEBUG", _env_bool("DEBUG", False))
 
-ALLOWED_HOSTS = _env_csv("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1")
+ALLOWED_HOSTS = _env_csv("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1,.onrender.com")
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -39,6 +39,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -93,10 +94,12 @@ USE_I18N = True
 USE_TZ = True
 
 STATIC_URL = "/static/"
-STATICFILES_DIRS = [
-    BASE_DIR / "static",
-]
-
+STATIC_ROOT = BASE_DIR / "staticfiles"
+STORAGES = {
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+    },
+}
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 CORS_ALLOWED_ORIGINS = _env_csv(
@@ -133,3 +136,4 @@ LOGGING = {
         },
     },
 }
+
