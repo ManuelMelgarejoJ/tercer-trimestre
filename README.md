@@ -64,3 +64,57 @@ Si cambias el frontend, ajusta `DJANGO_CORS_ALLOWED_ORIGINS` y `DJANGO_CSRF_TRUS
 - `library`: modelo `LibraryEntry`
 
 > No hay endpoints API predefinidos (salvo `admin/` y `health/`).
+
+## Despliegue en Render
+
+Este proyecto está preparado para desplegarse como **Web Service** usando el
+`Dockerfile`.
+
+### 1) Crear el servicio web
+
+En Render:
+
+1. New + → Web Service.
+2. Conecta el repositorio de GitHub.
+3. Runtime: Docker.
+4. Branch: la rama que vayas a entregar.
+5. Health Check Path: `/api/health/`.
+
+Render usará el `Dockerfile`, aplicará migraciones, recogerá estáticos y
+arrancará Django con `gunicorn`.
+
+### 2) Conectar la base de datos PostgreSQL
+
+En la base de datos de Render, copia la **Internal Database URL** y añádela en
+el Web Service como variable:
+
+```env
+DATABASE_URL=postgresql://...
+```
+
+No uses `POSTGRES_HOST=db` en Render: `db` solo existe dentro de
+`docker-compose` local.
+
+### 3) Variables recomendadas
+
+Configura estas variables en el Web Service:
+
+```env
+DEBUG=False
+SECRET_KEY=pon_aqui_una_clave_larga
+DATABASE_URL=la_internal_database_url_de_render
+```
+
+### 4) Comprobar que funciona
+
+Cuando el deploy termine, abre:
+
+```text
+https://TU-SERVICIO.onrender.com/api/health/
+```
+
+Debe responder:
+
+```json
+{"status": "ok"}
+```
