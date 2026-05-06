@@ -27,10 +27,10 @@ def _env_csv(name: str, default_csv: str = "") -> list[str]:
     items = [x.strip() for x in raw.split(",") if x.strip()]
     return items
 
-SECRET_KEY = _env("DJANGO_SECRET_KEY", _env("SECRET_KEY", "change-me"))
-DEBUG = _env_bool("DJANGO_DEBUG", _env_bool("DEBUG", False))
+SECRET_KEY = _env("DJANGO_SECRET_KEY", "change-me-in-production")
+DEBUG = _env_bool("DJANGO_DEBUG", True)
 
-ALLOWED_HOSTS = _env_csv("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1,.onrender.com")
+ALLOWED_HOSTS = _env_csv("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1")
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -76,29 +76,31 @@ TEMPLATES = [
 WSGI_APPLICATION = "steamlike_backend.wsgi.application"
 
 # -----------------------------
-# DATABASE (CORREGIDO PARA RENDER)
+# DATABASE CONFIGURATION
 # -----------------------------
 DATABASE_URL = _env_stripped("DATABASE_URL")
+
+# Normalizar protocolo para dj_database_url
 if DATABASE_URL and DATABASE_URL.startswith("postgres://"):
     DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
 
 DATABASES = {
-    "default": (
-        dj_database_url.parse(
-            DATABASE_URL,
-            conn_max_age=600,
-            ssl_require=_env_bool("DATABASE_SSL_REQUIRE", not DEBUG),
-        )
-        if DATABASE_URL
-        else {}
+    "default": dj_database_url.config(
+        default=DATABASE_URL,
+        conn_max_age=600,
+        conn_health_checks=True,
+        ssl_require=_env_bool("DATABASE_SSL_REQUIRE", not DEBUG),
     )
 }
 
-if not DATABASES["default"]:
+# Fallback si no hay URL (evita error de disco en Windows)
+if not DATABASE_URL:
     DATABASES["default"] = {
         "ENGINE": "django.db.backends.sqlite3",
         "NAME": BASE_DIR / "db.sqlite3",
     }
+
+# -----------------------------
 
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
@@ -123,13 +125,13 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 CORS_ALLOWED_ORIGINS = _env_csv(
     "DJANGO_CORS_ALLOWED_ORIGINS",
-    "http://frontend:3000,http://localhost:3000"
+    "http://localhost:3000"
 )
-CORS_ALLOW_CREDENTIALS = _env_bool("DJANGO_CORS_ALLOW_CREDENTIALS", True)
+CORS_ALLOW_CREDENTIALS = True
 
 CSRF_TRUSTED_ORIGINS = _env_csv(
     "DJANGO_CSRF_TRUSTED_ORIGINS",
-    "http://frontend:3000,http://localhost:3000"
+    "http://localhost:3000"
 )
 
 SESSION_COOKIE_SAMESITE = "Lax"
@@ -155,4 +157,3 @@ LOGGING = {
         },
     },
 }
-
