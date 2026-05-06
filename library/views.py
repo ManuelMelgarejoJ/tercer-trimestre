@@ -119,6 +119,12 @@ def register(request):
         )
     except (ExternalServiceUnavailable, ExternalServiceError):
         email_sent = False
+    except Exception as e:
+        # Capturamos cualquier otro error inesperado para que no rompa el registro
+        # pero lo marcamos como no enviado y lo logueamos.
+        from library.services.email_service import logger as email_logger
+        email_logger.error(f"Error inesperado al enviar email de registro: {str(e)}")
+        email_sent = False
 
     response = {"id": user.id, "username": user.username, "email": user.email, "email_sent": email_sent}
     if not email_sent:
