@@ -1,6 +1,8 @@
 name: Backend CI
 
-on: [push]
+on:
+  push:
+    branches: ["main", "OPTATIVA-SEMANA6"]
 
 jobs:
   test:
@@ -28,7 +30,7 @@ jobs:
     name: Trigger Render deploy
     runs-on: ubuntu-latest
     needs: test
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/OPTATIVA-SEMANA6')
 
     steps:
       - name: Check deploy hook secret
