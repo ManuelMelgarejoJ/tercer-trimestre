@@ -47,8 +47,16 @@ class EmailService:
             raise ExternalServiceError()
 
         payload = {
-            "from": {"address": from_address},
-            "to": [{"address": to}],
+            "from": {
+                "address": from_address,
+                "name": "Steamlike"
+            },
+            "to": [
+                {
+                    "address": to,
+                    "name": to.split("@")[0]
+                }
+            ],
             "subject": subject,
             "plain": text,
         }
@@ -94,7 +102,7 @@ class EmailService:
                     "result": "error",
                     "error_type": "external_service_error",
                     "status_code": response.status_code,
-                    "response": str(getattr(response, "text", ""))[:300],
+                    "response": response.text[:500],
                 }),
             )
             raise ExternalServiceError()

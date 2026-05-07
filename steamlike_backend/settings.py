@@ -1,4 +1,4 @@
-﻿from pathlib import Path
+from pathlib import Path
 import os
 import dj_database_url
 from dotenv import load_dotenv
@@ -8,6 +8,13 @@ load_dotenv(BASE_DIR / ".env")
 
 def _env(name: str, default: str | None = None) -> str | None:
     return os.environ.get(name, default)
+
+def _env_stripped(name: str) -> str | None:
+    value = os.environ.get(name)
+    if value is None:
+        return None
+    value = value.strip()
+    return value or None
 
 def _env_bool(name: str, default: bool = False) -> bool:
     value = os.environ.get(name)
@@ -20,10 +27,10 @@ def _env_csv(name: str, default_csv: str = "") -> list[str]:
     items = [x.strip() for x in raw.split(",") if x.strip()]
     return items
 
-SECRET_KEY = _env("DJANGO_SECRET_KEY", _env("SECRET_KEY", "change-me"))
-DEBUG = _env_bool("DJANGO_DEBUG", _env_bool("DEBUG", False))
+SECRET_KEY = _env("DJANGO_SECRET_KEY", "change-me-in-production")
+DEBUG = _env_bool("DJANGO_DEBUG", True)
 
-ALLOWED_HOSTS = _env_csv("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1,.onrender.com")
+ALLOWED_HOSTS = _env_csv("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1")
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -69,17 +76,31 @@ TEMPLATES = [
 WSGI_APPLICATION = "steamlike_backend.wsgi.application"
 
 # -----------------------------
-# DATABASE (CORREGIDO PARA RENDER)
+# DATABASE CONFIGURATION
 # -----------------------------
+DATABASE_URL = _env_stripped("DATABASE_URL")
+
+# Normalizar protocolo para dj_database_url
+if DATABASE_URL and DATABASE_URL.startswith("postgres://"):
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+
 DATABASES = {
-    "default": dj_database_url.config(default=_env("DATABASE_URL"), conn_max_age=600, ssl_require=False)
+    "default": dj_database_url.config(
+        default=DATABASE_URL,
+        conn_max_age=600,
+        conn_health_checks=True,
+        ssl_require=_env_bool("DATABASE_SSL_REQUIRE", not DEBUG),
+    )
 }
 
-if not DATABASES["default"]:
+# Fallback si no hay URL (evita error de disco en Windows)
+if not DATABASE_URL:
     DATABASES["default"] = {
         "ENGINE": "django.db.backends.sqlite3",
         "NAME": BASE_DIR / "db.sqlite3",
     }
+
+# -----------------------------
 
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
@@ -104,13 +125,13 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 CORS_ALLOWED_ORIGINS = _env_csv(
     "DJANGO_CORS_ALLOWED_ORIGINS",
-    "http://frontend:3000,http://localhost:3000"
+    "http://localhost:3000"
 )
-CORS_ALLOW_CREDENTIALS = _env_bool("DJANGO_CORS_ALLOW_CREDENTIALS", True)
+CORS_ALLOW_CREDENTIALS = True
 
 CSRF_TRUSTED_ORIGINS = _env_csv(
     "DJANGO_CSRF_TRUSTED_ORIGINS",
-    "http://frontend:3000,http://localhost:3000"
+    "http://localhost:3000"
 )
 
 SESSION_COOKIE_SAMESITE = "Lax"
@@ -120,12 +141,43 @@ MAILEROO_TOKEN = _env("MAILEROO_TOKEN")
 MAILEROO_FROM = _env("MAILEROO_FROM")
 MAILEROO_ENDPOINT = _env("MAILEROO_ENDPOINT", "https://smtp.maileroo.com/api/v2/emails")
 
+# -----------------------------
+# REDIS & CACHE CONFIGURATION
+# -----------------------------
+REDIS_URL = _env("REDIS_URL", "redis://redis:6379/0")
+
+CACHES = {
+    "default": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": REDIS_URL,
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+            "SOCKET_CONNECT_TIMEOUT": 5,
+            "SOCKET_TIMEOUT": 5,
+            "IGNORE_EXCEPTIONS": True,
+        },
+    }
+}
+
+CATALOG_CACHE_TTL = int(_env("CATALOG_CACHE_TTL", "3600"))  # 1 hour default
+CHEAPSHARK_SEARCH_URL = _env(
+    "CHEAPSHARK_SEARCH_URL",
+    "https://www.cheapshark.com/api/1.0/games",
+)
+
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
+    "formatters": {
+        "verbose": {
+            "format": "{asctime} {levelname} {name} {message}",
+            "style": "{",
+        },
+    },
     "handlers": {
         "console": {
             "class": "logging.StreamHandler",
+            "formatter": "verbose",
         },
     },
     "loggers": {
@@ -134,6 +186,10 @@ LOGGING = {
             "level": "INFO",
             "propagate": False,
         },
+        "library.services.catalog_service": {
+            "handlers": ["console"],
+            "level": "INFO",
+            "propagate": False,
+        },
     },
 }
-

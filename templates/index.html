@@ -4,116 +4,173 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SteamLike Dashboard</title>
+    <meta name="description" content="SteamLike — Panel de control para gestionar tu biblioteca de videojuegos y explorar el catálogo.">
+    <title>SteamLike — Tu Biblioteca de Juegos</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{% static 'library/css/index.css' %}">
 </head>
 <body>
 
     <header class="topbar">
-        <h1>SteamLike Dashboard</h1>
-        <p class="subtitle">Panel visual para probar tu API de Django</p>
+        <div class="topbar-inner">
+            <div class="logo">
+                <span class="logo-icon">🎮</span>
+                <div>
+                    <h1>SteamLike</h1>
+                    <p class="subtitle">Tu biblioteca de videojuegos</p>
+                </div>
+            </div>
+            <div id="user-pill" class="user-pill hidden">
+                <span class="user-dot"></span>
+                <span id="user-pill-name">—</span>
+                <button id="btn-logout-pill" class="pill-logout" title="Cerrar sesión">✕</button>
+            </div>
+        </div>
     </header>
+
+    <!-- TAB NAV -->
+    <nav class="tab-nav">
+        <button class="tab-btn active" data-tab="catalog">🔍 Catálogo</button>
+        <button class="tab-btn" data-tab="auth">👤 Cuenta</button>
+        <button class="tab-btn" data-tab="library">📚 Biblioteca</button>
+    </nav>
 
     <main class="container">
 
-        <!-- CUENTA -->
-        <section class="card">
-            <h2>Cuenta</h2>
-            <p class="desc">Registro, login, logout y perfil actual.</p>
+        <!-- ==================== TAB: CATÁLOGO ==================== -->
+        <div id="tab-catalog" class="tab-content active">
 
-            <form id="auth-form" class="form">
-                <label>Usuario
-                    <input id="username" type="text" placeholder="manolin" required>
-                </label>
-
-                <label>Correo electronico
-                    <input id="email" type="email" placeholder="manolin@example.com" required>
-                </label>
-
-                <label>Contraseña
-                    <input id="password" type="password" placeholder="mínimo 8 caracteres" required>
-                </label>
-
-                <div class="button-row">
-                    <button type="button" data-action="register">Registrarse</button>
-                    <button type="button" data-action="login" class="secondary">Iniciar sesión</button>
-                    <button type="button" data-action="logout" class="secondary">Cerrar sesión</button>
-                    <button type="button" data-action="me" class="secondary">Ver perfil</button>
+            <section class="card wide">
+                <div class="card-header">
+                    <h2>🔍 Buscar en el Catálogo</h2>
+                    <p class="desc">Busca juegos en CheapShark. Los resultados se cachean en Redis automáticamente.</p>
                 </div>
-            </form>
 
-            <div id="auth-status" class="status">Esperando acción…</div>
-        </section>
+                <div class="search-bar">
+                    <input id="catalog-query" type="text" placeholder="Buscar juego… ej: batman, mario, elden ring" autocomplete="off">
+                    <button id="btn-catalog-search">Buscar</button>
+                </div>
 
-        <!-- CONTRASEÑA -->
-        <section class="card">
-            <h2>Contraseña</h2>
-            <p class="desc">Cambia la contraseña del usuario autenticado.</p>
+                <div id="catalog-status" class="status hidden"></div>
+                <div id="catalog-results" class="game-grid"></div>
+            </section>
 
-            <form id="password-form" class="form">
-                <label>Contraseña actual
-                    <input id="current-password" type="password" required>
-                </label>
+        </div>
 
-                <label>Nueva contraseña
-                    <input id="new-password" type="password" required>
-                </label>
+        <!-- ==================== TAB: CUENTA ==================== -->
+        <div id="tab-auth" class="tab-content hidden">
 
-                <button type="submit">Cambiar contraseña</button>
-            </form>
+            <div class="two-col">
 
-            <div id="password-status" class="status">Necesitas iniciar sesión antes.</div>
-        </section>
+                <!-- Registro / Login -->
+                <section class="card">
+                    <div class="card-header">
+                        <h2>👤 Cuenta</h2>
+                        <p class="desc">Registro, login, logout y perfil.</p>
+                    </div>
 
-        <!-- BIBLIOTECA -->
-        <section class="card wide">
-            <h2>Biblioteca</h2>
-            <p class="desc">Crea entradas, consulta el listado y gestiona tus juegos.</p>
+                    <form id="auth-form" class="form">
+                        <label>Usuario
+                            <input id="username" type="text" placeholder="manolin" autocomplete="username">
+                        </label>
+                        <label>Correo electrónico
+                            <input id="email" type="email" placeholder="manolin@example.com" autocomplete="email">
+                        </label>
+                        <label>Contraseña
+                            <input id="password" type="password" placeholder="mínimo 8 caracteres" autocomplete="current-password">
+                        </label>
 
-            <form id="entry-form" class="form">
-                <label>External game ID
-                    <input id="external-game-id" type="text" placeholder="elden-ring" required>
-                </label>
+                        <div class="button-row">
+                            <button type="button" data-action="register">Registrarse</button>
+                            <button type="button" data-action="login" class="secondary">Iniciar sesión</button>
+                            <button type="button" data-action="logout" class="secondary">Cerrar sesión</button>
+                            <button type="button" data-action="me" class="secondary">Ver perfil</button>
+                        </div>
+                    </form>
 
-                <label>Estado
-                    <select id="status">
-                        <option value="completed">completed</option>
-                        <option value="dropped">dropped</option>
-                        <option value="playing">playing</option>
-                        <option value="wishlist">wishlist</option>
-                    </select>
-                </label>
+                    <div id="auth-status" class="status">Esperando acción…</div>
+                </section>
 
-                <label>Horas jugadas
-                    <input id="hours-played" type="number" min="0" value="0" required>
-                </label>
+                <!-- Cambiar contraseña -->
+                <section class="card">
+                    <div class="card-header">
+                        <h2>🔑 Contraseña</h2>
+                        <p class="desc">Cambia la contraseña del usuario autenticado.</p>
+                    </div>
 
-                <label>ID para acciones
-                    <input id="entry-id" type="number" min="1" placeholder="1">
-                </label>
+                    <form id="password-form" class="form">
+                        <label>Contraseña actual
+                            <input id="current-password" type="password" autocomplete="current-password">
+                        </label>
+                        <label>Nueva contraseña
+                            <input id="new-password" type="password" autocomplete="new-password">
+                        </label>
+                        <button type="submit">Cambiar contraseña</button>
+                    </form>
 
-                <div class="button-row">
-                    <button type="submit">Crear entrada</button>
-                    <button type="button" data-entry-action="list" class="secondary">Listar</button>
+                    <div id="password-status" class="status">Necesitas iniciar sesión antes.</div>
+                </section>
+
+            </div>
+
+        </div>
+
+        <!-- ==================== TAB: BIBLIOTECA ==================== -->
+        <div id="tab-library" class="tab-content hidden">
+
+            <section class="card wide">
+                <div class="card-header">
+                    <h2>📚 Biblioteca</h2>
+                    <p class="desc">Crea entradas, consulta el listado y gestiona tus juegos.</p>
+                </div>
+
+                <form id="entry-form" class="form form-inline">
+                    <label>External game ID
+                        <input id="external-game-id" type="text" placeholder="elden-ring">
+                    </label>
+                    <label>Estado
+                        <select id="status">
+                            <option value="wishlist">wishlist</option>
+                            <option value="playing">playing</option>
+                            <option value="completed">completed</option>
+                            <option value="dropped">dropped</option>
+                        </select>
+                    </label>
+                    <label>Horas jugadas
+                        <input id="hours-played" type="number" min="0" value="0">
+                    </label>
+                    <label>ID de entrada
+                        <input id="entry-id" type="number" min="1" placeholder="1">
+                    </label>
+                </form>
+
+                <div class="button-row mt">
+                    <button type="button" id="btn-create-entry">＋ Crear</button>
+                    <button type="button" data-entry-action="list" class="secondary">Listar todo</button>
                     <button type="button" data-entry-action="detail" class="secondary">Detalle</button>
                     <button type="button" data-entry-action="patch" class="secondary">PATCH</button>
                     <button type="button" data-entry-action="put" class="secondary">PUT</button>
                     <button type="button" data-entry-action="delete" class="danger">DELETE</button>
                 </div>
-            </form>
 
-            <div id="library-status" class="status">La biblioteca aparecerá aquí.</div>
-            <div id="entries" class="entries"></div>
-        </section>
+                <div id="library-status" class="status">La biblioteca aparecerá aquí.</div>
+                <div id="entries" class="entries"></div>
+            </section>
 
-        <!-- RESPUESTA CRUDA -->
-        <section class="card wide">
-            <h2>Respuesta del servidor</h2>
-            <textarea id="response-viewer" readonly></textarea>
+        </div>
+
+        <!-- Respuesta JSON siempre visible -->
+        <section class="card wide" id="response-section">
+            <div class="card-header">
+                <h2>📄 Respuesta del servidor</h2>
+                <button id="btn-clear-response" class="secondary small">Limpiar</button>
+            </div>
+            <textarea id="response-viewer" readonly placeholder="La respuesta JSON aparecerá aquí…"></textarea>
         </section>
 
     </main>
 
-    <script src="{% static 'library/js/index.js' %}?v=2"></script>
+    <script src="{% static 'library/js/index.js' %}?v=3"></script>
 </body>
 </html>

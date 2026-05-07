@@ -8,6 +8,11 @@ from .models import LibraryEntry
 from .helpers import validation_error, unauthorized, not_found, load_json
 from .services.email_service import (
     EmailService,
+    ExternalServiceError as EmailServiceError,
+    ExternalServiceUnavailable as EmailServiceUnavailable,
+)
+from .services.catalog_service import (
+    CatalogService,
     ExternalServiceError,
     ExternalServiceUnavailable,
 )
@@ -117,7 +122,13 @@ def register(request):
             action="register_welcome",
             user=user,
         )
-    except (ExternalServiceUnavailable, ExternalServiceError):
+    except (EmailServiceUnavailable, EmailServiceError):
+        email_sent = False
+    except Exception as e:
+        # Capturamos cualquier otro error inesperado para que no rompa el registro
+        # pero lo marcamos como no enviado y lo logueamos.
+        from library.services.email_service import logger as email_logger
+        email_logger.error(f"Error inesperado al enviar email de registro: {str(e)}")
         email_sent = False
 
     response = {"id": user.id, "username": user.username, "email": user.email, "email_sent": email_sent}
@@ -148,12 +159,45 @@ def debug_email_test(request):
             text=data["text"],
             action="send_email",
         )
-    except ExternalServiceUnavailable:
+    except EmailServiceUnavailable:
         return external_service_unavailable()
-    except ExternalServiceError:
+    except EmailServiceError:
         return external_service_error()
 
     return JsonResponse({"ok": True}, status=200)
+
+
+# buscar juegos en el catálogo externo
+@csrf_exempt
+@require_GET
+def catalog_search(request):
+    query = request.GET.get("q", "").strip()
+    if not query:
+        return JsonResponse(
+            {"error": "validation_error", "fields": {"q": "parámetro requerido"}},
+            status=400,
+        )
+
+    try:
+        games = CatalogService.search_games_with_fallback(query)
+    except ExternalServiceUnavailable:
+        return JsonResponse(
+            {
+                "error": "external_service_unavailable",
+                "message": "El catálogo externo no está disponible. Inténtalo más tarde.",
+            },
+            status=503,
+        )
+    except ExternalServiceError:
+        return JsonResponse(
+            {
+                "error": "external_service_error",
+                "message": "Error al consultar el catálogo externo.",
+            },
+            status=502,
+        )
+
+    return JsonResponse(games, safe=False, status=200)
 
 
 # login usuario
