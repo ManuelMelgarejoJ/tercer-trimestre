@@ -1,4 +1,4 @@
-﻿from pathlib import Path
+from pathlib import Path
 import os
 import dj_database_url
 from dotenv import load_dotenv
@@ -141,16 +141,52 @@ MAILEROO_TOKEN = _env("MAILEROO_TOKEN")
 MAILEROO_FROM = _env("MAILEROO_FROM")
 MAILEROO_ENDPOINT = _env("MAILEROO_ENDPOINT", "https://smtp.maileroo.com/api/v2/emails")
 
+# -----------------------------
+# REDIS & CACHE CONFIGURATION
+# -----------------------------
+REDIS_URL = _env("REDIS_URL", "redis://redis:6379/0")
+
+CACHES = {
+    "default": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": REDIS_URL,
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+            "SOCKET_CONNECT_TIMEOUT": 5,
+            "SOCKET_TIMEOUT": 5,
+            "IGNORE_EXCEPTIONS": True,
+        },
+    }
+}
+
+CATALOG_CACHE_TTL = int(_env("CATALOG_CACHE_TTL", "3600"))  # 1 hour default
+CHEAPSHARK_SEARCH_URL = _env(
+    "CHEAPSHARK_SEARCH_URL",
+    "https://www.cheapshark.com/api/1.0/games",
+)
+
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
+    "formatters": {
+        "verbose": {
+            "format": "{asctime} {levelname} {name} {message}",
+            "style": "{",
+        },
+    },
     "handlers": {
         "console": {
             "class": "logging.StreamHandler",
+            "formatter": "verbose",
         },
     },
     "loggers": {
         "library.services.email_service": {
+            "handlers": ["console"],
+            "level": "INFO",
+            "propagate": False,
+        },
+        "library.services.catalog_service": {
             "handlers": ["console"],
             "level": "INFO",
             "propagate": False,

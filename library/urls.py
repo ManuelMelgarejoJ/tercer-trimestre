@@ -11,6 +11,7 @@ from .views import (
     library_entry_detail,
     replace_library_entry,
     delete_library_entry,
+    catalog_search,
 )
 
 urlpatterns = [
@@ -25,4 +26,5 @@ urlpatterns = [
     path("api/library/entries/<int:entry_id>/", library_entry_detail),
     path("api/library/entries/<int:entry_id>/put/", replace_library_entry),
     path("api/library/entries/<int:entry_id>/delete/", delete_library_entry),
+    path("api/catalog/search/", catalog_search),
 ]
